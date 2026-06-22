@@ -1,0 +1,28 @@
+[package]
+name = "enxame-metainfo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91.0"
+description = "Typed BitTorrent metainfo (.torrent) — parse a torrent file / info dict into a typed Metainfo and compute the v1 info-hash. Part of the pleme-io ENXAME BitTorrent suite."
+homepage = "https://github.com/pleme-io/enxame-metainfo"
+repository = "https://github.com/pleme-io/enxame-metainfo"
+readme = "README.md"
+license = "MIT"
+documentation = "https://docs.rs/enxame-metainfo"
+categories = ["network-programming", "parser-implementations"]
+keywords = ["bittorrent", "torrent", "metainfo", "info-hash", "pleme-io"]
+publish = true
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[dependencies]
+# The bencode keystone (pleme-io ENXAME suite). Path during local
+# bring-up; resolves to the published crate once both ship.
+bencode = { path = "../bencode", version = "0.1" }
+# v1 info-hash is the SHA-1 of the bencoded info dict (BEP-3).
+sha1 = "0.10"
+
+[dev-dependencies]

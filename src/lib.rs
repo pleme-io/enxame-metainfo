@@ -128,7 +128,10 @@ pub enum Error {
     /// A required key was missing.
     MissingKey { key: &'static str },
     /// A key had the wrong bencode type.
-    WrongType { key: &'static str, expected: &'static str },
+    WrongType {
+        key: &'static str,
+        expected: &'static str,
+    },
     /// `pieces` length wasn't a multiple of 20.
     BadPieces,
     /// Neither `length` nor `files` present, or both.
@@ -168,7 +171,9 @@ impl Metainfo {
         let root = bencode::parse(input)?;
         let dict = root.as_dict().ok_or(Error::NotADict { what: "torrent" })?;
 
-        let info_value = dict.get(b"info".as_slice()).ok_or(Error::MissingKey { key: "info" })?;
+        let info_value = dict
+            .get(b"info".as_slice())
+            .ok_or(Error::MissingKey { key: "info" })?;
         let info = parse_info(info_value)?;
         // v1 info-hash = SHA-1 of the canonical bencoded info dict. Safe
         // here because bencode::parse only accepts canonical input, so
@@ -191,10 +196,13 @@ fn parse_info(value: &Bencode) -> Result<InfoDict, Error> {
     let info = value.as_dict().ok_or(Error::NotADict { what: "info" })?;
 
     let name = req_str(value, b"name", "name")?;
-    let piece_length = value
-        .get(b"piece length")
-        .and_then(Bencode::as_int)
-        .ok_or(Error::MissingKey { key: "piece length" })?;
+    let piece_length =
+        value
+            .get(b"piece length")
+            .and_then(Bencode::as_int)
+            .ok_or(Error::MissingKey {
+                key: "piece length",
+            })?;
     let piece_length = u64::try_from(piece_length).map_err(|_| Error::WrongType {
         key: "piece length",
         expected: "a non-negative integer",
@@ -232,31 +240,46 @@ fn parse_info(value: &Bencode) -> Result<InfoDict, Error> {
 
     // Touch `info` so the unused binding reads as the validated dict.
     let _ = info;
-    Ok(InfoDict { name, piece_length, pieces, layout, private })
+    Ok(InfoDict {
+        name,
+        piece_length,
+        pieces,
+        layout,
+        private,
+    })
 }
 
 fn parse_files(value: &Bencode) -> Result<Vec<FileEntry>, Error> {
-    let list = value.as_list().ok_or(Error::WrongType { key: "files", expected: "a list" })?;
+    let list = value.as_list().ok_or(Error::WrongType {
+        key: "files",
+        expected: "a list",
+    })?;
     list.iter()
         .map(|entry| {
-            let length = entry
-                .get(b"length")
-                .and_then(Bencode::as_int)
-                .ok_or(Error::MissingKey { key: "files[].length" })?;
+            let length =
+                entry
+                    .get(b"length")
+                    .and_then(Bencode::as_int)
+                    .ok_or(Error::MissingKey {
+                        key: "files[].length",
+                    })?;
             let length = u64::try_from(length).map_err(|_| Error::WrongType {
                 key: "files[].length",
                 expected: "a non-negative integer",
             })?;
-            let path_list = entry
-                .get(b"path")
-                .and_then(Bencode::as_list)
-                .ok_or(Error::MissingKey { key: "files[].path" })?;
+            let path_list =
+                entry
+                    .get(b"path")
+                    .and_then(Bencode::as_list)
+                    .ok_or(Error::MissingKey {
+                        key: "files[].path",
+                    })?;
             let path = path_list
                 .iter()
                 .map(|c| {
-                    c.as_str()
-                        .map(str::to_owned)
-                        .ok_or(Error::NotUtf8 { key: "files[].path" })
+                    c.as_str().map(str::to_owned).ok_or(Error::NotUtf8 {
+                        key: "files[].path",
+                    })
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(FileEntry { length, path })
@@ -272,9 +295,16 @@ fn parse_announce_list(root: &Bencode) -> Result<Vec<Vec<String>>, Error> {
         .iter()
         .map(|tier| {
             tier.as_list()
-                .ok_or(Error::WrongType { key: "announce-list", expected: "a list of lists" })?
+                .ok_or(Error::WrongType {
+                    key: "announce-list",
+                    expected: "a list of lists",
+                })?
                 .iter()
-                .map(|u| u.as_str().map(str::to_owned).ok_or(Error::NotUtf8 { key: "announce-list" }))
+                .map(|u| {
+                    u.as_str().map(str::to_owned).ok_or(Error::NotUtf8 {
+                        key: "announce-list",
+                    })
+                })
                 .collect::<Result<Vec<_>, _>>()
         })
         .collect()
@@ -291,7 +321,10 @@ fn req_str(d: &Bencode, key: &'static [u8], name: &'static str) -> Result<String
 fn opt_str(d: &Bencode, key: &[u8], name: &'static str) -> Result<Option<String>, Error> {
     match d.get(key) {
         None => Ok(None),
-        Some(v) => v.as_str().map(|s| Some(s.to_owned())).ok_or(Error::NotUtf8 { key: name }),
+        Some(v) => v
+            .as_str()
+            .map(|s| Some(s.to_owned()))
+            .ok_or(Error::NotUtf8 { key: name }),
     }
 }
 
@@ -309,7 +342,10 @@ mod tests {
         // one 20-byte piece hash
         info.insert(b"pieces".to_vec(), Bencode::Bytes(vec![0xab; 20]));
         let mut root = BTreeMap::new();
-        root.insert(b"announce".to_vec(), Bencode::Bytes(b"http://t.example/announce".to_vec()));
+        root.insert(
+            b"announce".to_vec(),
+            Bencode::Bytes(b"http://t.example/announce".to_vec()),
+        );
         root.insert(b"info".to_vec(), Bencode::Dict(info));
         Bencode::Dict(root).to_bytes()
     }
@@ -348,7 +384,10 @@ mod tests {
         f1.insert(b"length".to_vec(), Bencode::Int(100));
         f1.insert(
             b"path".to_vec(),
-            Bencode::List(vec![Bencode::Bytes(b"a".to_vec()), Bencode::Bytes(b"x.txt".to_vec())]),
+            Bencode::List(vec![
+                Bencode::Bytes(b"a".to_vec()),
+                Bencode::Bytes(b"x.txt".to_vec()),
+            ]),
         );
         let mut info = BTreeMap::new();
         info.insert(b"name".to_vec(), Bencode::Bytes(b"dir".to_vec()));

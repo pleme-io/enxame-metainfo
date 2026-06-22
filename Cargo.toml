@@ -21,8 +21,14 @@ missing_panics_doc = "allow"
 [dependencies]
 # The bencode keystone (pleme-io ENXAME suite). Path during local
 # bring-up; resolves to the published crate once both ship.
-bencode = { path = "../bencode", version = "0.1" }
+bencode = { package = "enxame-bencode", path = "../bencode", version = "0.1" }
 # v1 info-hash is the SHA-1 of the bencoded info dict (BEP-3).
 sha1 = "0.10"
 
 [dev-dependencies]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

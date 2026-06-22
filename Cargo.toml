@@ -1,6 +1,6 @@
 [package]
 name = "enxame-metainfo"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.91.0"
 description = "Typed BitTorrent metainfo (.torrent) — parse a torrent file / info dict into a typed Metainfo and compute the v1 info-hash. Part of the pleme-io ENXAME BitTorrent suite."
